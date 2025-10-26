@@ -1,11 +1,21 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
+# Устанавливаем локаль и поддержку кириллицы
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV PYTHONUTF8=1
+
 # Установка зависимостей системы
 RUN apt-get update && apt-get install -y \
+    locales \
     gcc \
+    && locale-gen ru_RU.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
+
+
+WORKDIR /app
 
 # Копируем файл зависимостей
 COPY requirements.txt .

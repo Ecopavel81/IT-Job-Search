@@ -19,9 +19,77 @@ const JobSearchSystem = () => {
     message: '',
     resume: null
   });
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
 
   const priorityLocations = ['Dubai', 'Canada', 'Ireland', 'Serbia'];
   const positions = ['ML Engineer', 'AI Developer', 'Data Scientist'];
+  
+  // Словарь синонимов и связанных терминов для улучшенного поиска
+  const searchDictionary = {
+    'ml': ['machine learning', 'машинное обучение', 'ml', 'машинное обучение'],
+    'machine learning': ['ml', 'машинное обучение', 'artificial intelligence', 'ai'],
+    'ai': ['artificial intelligence', 'искусственный интеллект', 'ai', 'машинное обучение', 'ml'],
+    'artificial intelligence': ['ai', 'искусственный интеллект', 'machine learning', 'ml'],
+    'data science': ['data scientist', 'анализ данных', 'data analysis', 'статистика'],
+    'data scientist': ['data science', 'анализ данных', 'data analyst', 'статистик'],
+    'python': ['питон', 'python3', 'py', 'программирование'],
+    'tensorflow': ['tf', 'tensor flow', 'глубокое обучение'],
+    'pytorch': ['torch', 'глубокое обучение', 'neural networks'],
+    'deep learning': ['глубокое обучение', 'нейронные сети', 'neural networks', 'dl'],
+    'nlp': ['natural language processing', 'обработка естественного языка', 'текст'],
+    'computer vision': ['cv', 'компьютерное зрение', 'image processing', 'обработка изображений'],
+    'mlops': ['ml ops', 'machine learning operations', 'devops', 'deployment'],
+    'engineer': ['инженер', 'разработчик', 'developer', 'программист'],
+    'developer': ['разработчик', 'программист', 'engineer', 'инженер'],
+    'scientist': ['ученый', 'исследователь', 'researcher', 'аналитик'],
+    'analyst': ['аналитик', 'исследователь', 'scientist', 'ученый'],
+    'remote': ['удаленно', 'удаленная работа', 'home office', 'дистанционно'],
+    'senior': ['старший', 'ведущий', 'lead', 'principal'],
+    'junior': ['младший', 'начинающий', 'entry level', 'стажер'],
+    'aws': ['amazon web services', 'облачные сервисы', 'cloud'],
+    'docker': ['контейнеризация', 'containers', 'kubernetes'],
+    'kubernetes': ['k8s', 'контейнеры', 'orchestration', 'docker'],
+    'sql': ['база данных', 'database', 'mysql', 'postgresql'],
+    'nosql': ['mongodb', 'redis', 'нереляционная база данных'],
+    'statistics': ['статистика', 'статистический анализ', 'stats'],
+    'research': ['исследование', 'R&D', 'научная работа'],
+    'startup': ['стартап', 'новая компания', 'венчурная компания'],
+    'fintech': ['финтех', 'финансовые технологии', 'банкинг'],
+    'healthcare': ['здравоохранение', 'медицина', 'биотехнологии'],
+    'ecommerce': ['электронная коммерция', 'интернет-магазины', 'онлайн продажи']
+  };
+
+  // Функция для расширения поискового запроса с помощью словаря
+  const expandSearchTerms = (searchTerm) => {
+    const terms = searchTerm.toLowerCase().split(/\s+/);
+    const expandedTerms = new Set(terms);
+    
+    terms.forEach(term => {
+      // Добавляем оригинальный термин
+      expandedTerms.add(term);
+      
+      // Ищем в словаре и добавляем синонимы
+      Object.keys(searchDictionary).forEach(key => {
+        if (key.includes(term) || term.includes(key)) {
+          searchDictionary[key].forEach(synonym => {
+            expandedTerms.add(synonym.toLowerCase());
+          });
+        }
+      });
+      
+      // Ищем синонимы для каждого слова в словаре
+      Object.entries(searchDictionary).forEach(([key, synonyms]) => {
+        if (synonyms.some(synonym => synonym.toLowerCase().includes(term))) {
+          synonyms.forEach(synonym => {
+            expandedTerms.add(synonym.toLowerCase());
+          });
+          expandedTerms.add(key.toLowerCase());
+        }
+      });
+    });
+    
+    return Array.from(expandedTerms);
+  };
 
   useEffect(() => {
     const mockJobs = [
@@ -119,11 +187,11 @@ const JobSearchSystem = () => {
     let filtered = jobs;
 
     if (searchTerm) {
-      filtered = filtered.filter(job =>
-        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const expandedTerms = expandSearchTerms(searchTerm);
+      filtered = filtered.filter(job => {
+        const searchText = `${job.title} ${job.company} ${job.description} ${job.tags.join(' ')}`.toLowerCase();
+        return expandedTerms.some(term => searchText.includes(term));
+      });
     }
 
     if (selectedLocation !== 'all') {
@@ -222,11 +290,38 @@ const JobSearchSystem = () => {
                 <Search className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Поиск по ключевым словам..."
+                  placeholder="Поиск по ключевым словам... (поддерживает синонимы)"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={() => setShowSearchSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {showSearchSuggestions && searchTerm && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-3">
+                    <div className="text-sm text-gray-600 mb-2">
+                      <strong>Расширенные термины поиска:</strong>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {expandSearchTerms(searchTerm).slice(0, 10).map((term, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                        >
+                          {term}
+                        </span>
+                      ))}
+                      {expandSearchTerms(searchTerm).length > 10 && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                          +{expandSearchTerms(searchTerm).length - 10} еще
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-2">
+                      💡 Поиск работает по синонимам и связанным терминам
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

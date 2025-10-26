@@ -23,12 +23,12 @@ services:
       - job-search-network
 
   frontend:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
     container_name: job-search-frontend
     ports:
       - "3000:80"
-    volumes:
-      - ./interactive artifact.html:/usr/share/nginx/html/index.html:ro
     depends_on:
       - backend
     networks:
