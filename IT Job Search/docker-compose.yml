@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: job-search-backend
+    ports:
+      - "8000:8090"
+    environment:
+      - TELEGRAM_API_ID=${TELEGRAM_API_ID}
+      - TELEGRAM_API_HASH=${TELEGRAM_API_HASH}
+      - TELEGRAM_PHONE=${TELEGRAM_PHONE}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - FROM_EMAIL=${FROM_EMAIL}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./data:/app/data
+    restart: unless-stopped
+    networks:
+      - job-search-network
+
+  frontend:
+    image: nginx:alpine
+    container_name: job-search-frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./interactive artifact.html:/usr/share/nginx/html/index.html:ro
+    depends_on:
+      - backend
+    networks:
+      - job-search-network
+
+networks:
+  job-search-network:
+    driver: bridge
